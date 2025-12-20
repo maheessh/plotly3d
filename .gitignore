@@ -1,0 +1,65 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# =========================
+# ML / Data
+# =========================
+.cache/
+.cache/huggingface/
+.cache/torch/
+*.pt
+*.pth
+*.onnx
+*.npz
+
+# Datasets (HF / local)
+data/
+datasets/
+*.arrow
+
+# =========================
+# Dash / Plotly
+# =========================
+*.html
+*.log
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+
+# =========================
+# Build / Distribution
+# =========================
+build/
+dist/
+*.egg-info/

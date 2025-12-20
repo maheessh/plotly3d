@@ -1,0 +1,17 @@
+# Core
+numpy
+torch
+scikit-learn
+
+# Visualization
+plotly
+matplotlib
+dash
+
+# Hugging Face / CLIP
+transformers
+datasets
+Pillow
+
+# Optional but recommended (faster dataset loading)
+tqdm
