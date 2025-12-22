@@ -13,9 +13,8 @@ from transformers import CLIPModel, CLIPProcessor
 from dash import Dash, dcc, html, Input, Output
 
 
-# ==============================
 # CONFIG
-# ==============================
+
 NUM_DATA_POINTS = 120
 NUM_ANCHORS = 6
 RANDOM_SEED = 42
@@ -24,9 +23,9 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 np.random.seed(RANDOM_SEED)
 
 
-# ==============================
+
 # Helpers
-# ==============================
+
 def pil_to_data_uri(pil_img) -> str:
     """Convert PIL image -> data URI for <img src="...">."""
     buf = io.BytesIO()
@@ -42,9 +41,8 @@ def apply_brightness(hex_color: str, sim: float):
     return tuple((rgb * brightness).clip(0, 1))
 
 
-# ==============================
 # Load dataset (real jewelry images)
-# ==============================
+
 ds = load_dataset("sidd707/jewelry-design-dataset", split="train")
 total_needed = NUM_ANCHORS + NUM_DATA_POINTS
 ds = ds.shuffle(seed=RANDOM_SEED).select(range(total_needed))
@@ -58,9 +56,7 @@ anchor_img_src = [pil_to_data_uri(img) for img in anchor_pils]
 data_img_src = [pil_to_data_uri(img) for img in data_pils]
 
 
-# ==============================
 # Load CLIP
-# ==============================
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(DEVICE)
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 model.eval()
@@ -71,7 +67,7 @@ def compute_clip_embeddings(pil_list):
     inputs = processor(images=pil_list, return_tensors="pt", padding=True).to(DEVICE)
     emb = model.get_image_features(**inputs)  # [N, D]
     emb = emb.detach().cpu().numpy()
-    emb /= np.linalg.norm(emb, axis=1, keepdims=True)  # normalize for cosine
+    emb /= np.linalg.norm(emb, axis=1, keepdims=True) 
     return emb
 
 
@@ -80,28 +76,23 @@ anchor_embeddings = all_embeddings[:NUM_ANCHORS]
 data_embeddings = all_embeddings[NUM_ANCHORS:]
 
 
-# ==============================
 # Cosine similarity: data vs anchors
-# ==============================
-similarity_matrix = data_embeddings @ anchor_embeddings.T  # [N, A]
+
+similarity_matrix = data_embeddings @ anchor_embeddings.T 
 closest_anchor_idx = np.argmax(similarity_matrix, axis=1)
 max_similarity = np.max(similarity_matrix, axis=1)
 
 
-# ==============================
 # PCA -> 3D (for visualization) + sphere normalization
-# ==============================
 pca = PCA(n_components=3, random_state=RANDOM_SEED)
 all_3d = pca.fit_transform(np.vstack([anchor_embeddings, data_embeddings]))
-all_3d /= np.linalg.norm(all_3d, axis=1, keepdims=True)  # unit sphere
+all_3d /= np.linalg.norm(all_3d, axis=1, keepdims=True) 
 
 anchor_vectors = all_3d[:NUM_ANCHORS]
 data_vectors = all_3d[NUM_ANCHORS:]
 
 
-# ==============================
 # Colors
-# ==============================
 anchor_colors = list(mcolors.TABLEAU_COLORS.values())[:NUM_ANCHORS]
 data_colors = [
     apply_brightness(anchor_colors[closest_anchor_idx[i]], float(max_similarity[i]))
@@ -109,10 +100,7 @@ data_colors = [
 ]
 
 
-# ==============================
 # Plotly Figure
-# ==============================
-# For hover: include customdata so Dash can read it from hoverData
 data_customdata = np.stack(
     [np.arange(NUM_DATA_POINTS), closest_anchor_idx, max_similarity],
     axis=1
@@ -171,9 +159,7 @@ fig.update_layout(
 )
 
 
-# ==============================
 # Dash App
-# ==============================
 app = Dash(__name__)
 app.title = "Jewelry Similarity Explorer (Dash)"
 
@@ -199,7 +185,7 @@ app.layout = html.Div(
                         dcc.Graph(
                             id="graph-3d",
                             figure=fig,
-                            clear_on_unhover=False,  # keeps last hoverData so preview doesn't flicker to empty
+                            clear_on_unhover=False, 
                             config={"displayModeBar": True},
                         ),
                     ],
@@ -225,7 +211,7 @@ app.layout = html.Div(
                                 "width": "100%",
                                 "borderRadius": "10px",
                                 "border": "1px solid #1F2937",
-                                "display": "none",  # hidden until first hover
+                                "display": "none",  
                             },
                         ),
                         html.Div(
@@ -248,16 +234,13 @@ app.layout = html.Div(
     Input("graph-3d", "hoverData"),
 )
 def update_preview(hoverData):
-    # No hover yet
     if not hoverData or "points" not in hoverData or len(hoverData["points"]) == 0:
         return "", {"width": "100%", "borderRadius": "10px", "display": "none"}, "Hover a point to preview the image here."
 
     p = hoverData["points"][0]
 
-    # Trace index: 0 = data, 1 = anchors (based on figure add_trace order)
     curve = p.get("curveNumber", 0)
 
-    # Plotly sometimes uses pointNumber instead of pointIndex
     idx = p.get("pointIndex", p.get("pointNumber", 0))
 
     if curve == 0:
@@ -299,8 +282,4 @@ def update_preview(hoverData):
 
 
 if __name__ == "__main__":
-    # Run:
-    #   python app.py
-    # Then open:
-    #   http://127.0.0.1:8050
     app.run(debug=True)
